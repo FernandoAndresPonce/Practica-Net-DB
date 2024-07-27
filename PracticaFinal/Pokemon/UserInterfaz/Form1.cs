@@ -15,20 +15,25 @@ namespace UserInterfaz
     public partial class Form1 : Form
     {
         private List<Pokemon> listaPokemones; // Ojo.
-         // ojo
+                                              // ojo
 
         public Form1()
         {
             InitializeComponent();
 
             this.listaPokemones = new List<Pokemon>();
-            
+
         }
 
         private void frmTablaPrincipal_Load(object sender, EventArgs e)
         {
             cargarFormPrincipal();
-            
+
+            cmbCampo.Items.Add("Numero");
+            cmbCampo.Items.Add("Nombre");
+            cmbCampo.Items.Add("Descripcion");
+
+
         }
         private void cargarFormPrincipal()
         {
@@ -44,20 +49,25 @@ namespace UserInterfaz
 
                 MessageBox.Show(ex.ToString());
             }
-          
+
         }
-    
+
 
         private void dgvPokemones_SelectionChanged(object sender, EventArgs e)
         {
-            Pokemon seleccionImagen = (Pokemon)dgvPokemones.CurrentRow.DataBoundItem;
-            cargarImagenPrincipal(seleccionImagen.UrlImagen);
+            if (dgvPokemones.CurrentRow != null)
+            {
+                Pokemon seleccionImagen = (Pokemon)dgvPokemones.CurrentRow.DataBoundItem;
+                cargarImagenPrincipal(seleccionImagen.UrlImagen);
+            }
         }
 
         private void ocultarColumnas()
         {
             dgvPokemones.Columns["UrlImagen"].Visible = false;
             dgvPokemones.Columns["Id"].Visible = false;
+            dgvPokemones.Columns["IdTipo"].Visible = false;
+            dgvPokemones.Columns["IdDebilidad"].Visible = false;
         }
         private void cargarImagenPrincipal(string imagenPokemon)
         {
@@ -82,7 +92,7 @@ namespace UserInterfaz
 
         private void btnModificar_Click(object sender, EventArgs e)
         {
-            Pokemon seleccionadoModicar = (Pokemon) dgvPokemones.CurrentRow.DataBoundItem;
+            Pokemon seleccionadoModicar = (Pokemon)dgvPokemones.CurrentRow.DataBoundItem;
 
             frmAltaPokemon modificarPokemon = new frmAltaPokemon(seleccionadoModicar);
             modificarPokemon.ShowDialog();
@@ -92,16 +102,125 @@ namespace UserInterfaz
 
         private void BtnEliminacionFisica_Click(object sender, EventArgs e)
         {
-            Pokemon pokemonEliminacionFisica = (Pokemon) dgvPokemones.CurrentRow.DataBoundItem;
+            Pokemon pokemonEliminacionFisica = (Pokemon)dgvPokemones.CurrentRow.DataBoundItem;
             Negocio negocio = new Negocio();
 
-            DialogResult respuesta = MessageBox.Show("Esta seguro de Eliminar el Regsitro","Atencion...", MessageBoxButtons.OKCancel,MessageBoxIcon.Stop);
+            DialogResult respuesta = MessageBox.Show("Esta seguro de Eliminar el Regsitro", "Atencion...", MessageBoxButtons.OKCancel, MessageBoxIcon.Stop);
             if (respuesta == DialogResult.OK)
             {
                 negocio.EliminacionFisica(pokemonEliminacionFisica);
                 cargarFormPrincipal();
             }
 
+
+        }
+
+        private void btnEliminacionLogica_Click(object sender, EventArgs e)
+        {
+            Pokemon pokemonEliminacionLogica = (Pokemon)dgvPokemones.CurrentRow.DataBoundItem;
+            Negocio negocio = new Negocio();
+
+            DialogResult respuesta = MessageBox.Show("Desea Eliminar el Registro", "Atencion Elimanando...", MessageBoxButtons.OKCancel, MessageBoxIcon.Stop);
+            if (respuesta == DialogResult.OK)
+            {
+                negocio.EliminacionLogica(pokemonEliminacionLogica);
+                cargarFormPrincipal();
+            }
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+            string filtrar = txtBuscador.Text;
+            List<Pokemon> listaFiltrar = new List<Pokemon>();
+
+            if (filtrar != string.Empty)
+                listaFiltrar = listaPokemones.FindAll(x => x.Nombre.ToLower().Contains(filtrar.ToLower()) || x.Tipo.Descripcion.ToLower().Contains(filtrar.ToLower()));
+            else
+                listaFiltrar = listaPokemones;
+
+            dgvPokemones.DataSource = null;
+            dgvPokemones.DataSource = listaFiltrar;
+            ocultarColumnas();
+        }
+
+
+
+        private void cmbCampo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string filtroCampo = cmbCampo.SelectedItem.ToString();
+
+            switch (filtroCampo)
+            {
+                case "Numero":
+                    cmbCriterio.Items.Clear();
+                    cmbCriterio.Items.Add("Mayor a");
+                    cmbCriterio.Items.Add("Menor a");
+                    cmbCriterio.Items.Add("Igual a");
+                    break;
+                case "Nombre":
+                    cmbCriterio.Items.Clear();
+                    cmbCriterio.Items.Add("Empiza con");
+                    cmbCriterio.Items.Add("Termina con");
+                    cmbCriterio.Items.Add("Contiene");
+                    break;
+                default:
+                    cmbCriterio.Items.Clear();
+                    cmbCriterio.Items.Add("Empiza con");
+                    cmbCriterio.Items.Add("Termina con");
+                    cmbCriterio.Items.Add("Contiene");
+                    break;
+            }
+        }
+
+        public bool soloNumero(string consulta)
+        {
+            foreach (char numeros in consulta)
+            {
+                if (!(char.IsNumber(numeros)))
+                    return true;
+
+            }   return false;
+        }
+
+        public bool validarCombo()
+        {
+            if (cmbCampo.SelectedIndex < 0)
+            {
+                MessageBox.Show("El Campo esta Vacio");
+                return true;
+            }
+            else if (cmbCriterio.SelectedIndex < 0)
+            {
+                MessageBox.Show("El Criterio esta Vaacio");
+                return true;
+
+            }
+            else if (soloNumero(txtFiltro.Text))
+            {
+                MessageBox.Show("Ingrese solamente numeros.");
+                return true;
+            }
+
+            return false;
+        }
+
+
+        private void btnBuscar_Click(object sender, EventArgs e)
+        {
+            Negocio negocio = new Negocio();
+            List<Pokemon> filtrarPokemon = new List<Pokemon>();
+
+            if (validarCombo())
+                return;
+
+            string campo = cmbCampo.SelectedItem.ToString();
+            string criterio = cmbCriterio.SelectedItem.ToString();
+            string filtro = txtFiltro.Text;
+
+
+            filtrarPokemon = negocio.ListaFiltrada(campo, criterio, filtro);
+            dgvPokemones.DataSource = null;
+            dgvPokemones.DataSource = filtrarPokemon;
 
         }
     }

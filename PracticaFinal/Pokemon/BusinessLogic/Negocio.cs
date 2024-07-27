@@ -18,14 +18,14 @@ namespace BusinessLogic
         {
             this.datos = new AccesoDatos();
             this.listaPokemones = new List<Pokemon>();
-            
+
         }
 
         public List<Pokemon> Listar()
         {
-                try
-                { 
-                datos.setearConsulta("Select P.Id, P.Numero, P.Nombre, P.Descripcion,P.UrlImagen, T.Descripcion Tipo, D.Descripcion Debilidad, P.IdTipo, P.IdDebilidad from POKEMONS P, ELEMENTOS T, ELEMENTOS D Where P.IdTipo = T.Id And P.IdDebilidad = D.Id");
+            try
+            {
+                datos.setearConsulta("Select P.Id, P.Numero, P.Nombre, P.Descripcion,P.UrlImagen, T.Descripcion Tipo, D.Descripcion Debilidad, P.IdTipo, P.IdDebilidad from POKEMONS P, ELEMENTOS T, ELEMENTOS D Where P.IdTipo = T.Id And P.IdDebilidad = D.Id And P.Activo = 1");
                 datos.ejecutarLectura();
 
                 while (datos.Lector.Read())
@@ -35,7 +35,7 @@ namespace BusinessLogic
                     pokemonAuxiliar.Numero = (int)datos.Lector["Numero"];
                     pokemonAuxiliar.Nombre = (string)datos.Lector["Nombre"];
                     pokemonAuxiliar.Descripcion = (string)datos.Lector["Descripcion"];
-                    if(!(datos.Lector["UrlImagen"] is DBNull))
+                    if (!(datos.Lector["UrlImagen"] is DBNull))
                         pokemonAuxiliar.UrlImagen = (string)datos.Lector["UrlImagen"];
 
                     pokemonAuxiliar.Tipo = new Elemento();
@@ -50,20 +50,20 @@ namespace BusinessLogic
 
                 }
 
-                    return listaPokemones;
-                }
-                catch (Exception ex)
-                {
+                return listaPokemones;
+            }
+            catch (Exception ex)
+            {
 
-                    throw ex;
-                }
+                throw ex;
+            }
 
-                finally
-                {
-                    datos.cerrarConexion();
-                }
+            finally
+            {
+                datos.cerrarConexion();
+            }
 
-            
+
 
         }
 
@@ -102,7 +102,26 @@ namespace BusinessLogic
             catch (Exception ex)
             {
 
-                throw ex ;
+                throw ex;
+            }
+            finally
+            {
+                datos.cerrarConexion();
+            }
+        }
+
+        public void EliminacionLogica(Pokemon pokemonEliminacionLogica)
+        {
+            try
+            {
+                datos.setearConsulta("update POKEMONS set Activo = 0 where Id = @Id;");
+                datos.setearParametro("@Id", pokemonEliminacionLogica.Id);
+                datos.ejecutarAccion();
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
             }
             finally
             {
@@ -129,15 +148,108 @@ namespace BusinessLogic
 
                 throw ex;
             }
-            finally 
-            { 
+            finally
+            {
                 datos.cerrarConexion();
             }
         }
+
+        public List<Pokemon> ListaFiltrada(string campo, string criterio, string filtro)
+        {
+
+            try
+            {
+                string consulta = "Select P.Id, P.Numero, P.Nombre, P.Descripcion,P.UrlImagen, T.Descripcion Tipo, D.Descripcion Debilidad, P.IdTipo, P.IdDebilidad from POKEMONS P, ELEMENTOS T, ELEMENTOS D Where P.IdTipo = T.Id And P.IdDebilidad = D.Id And P.Activo = 1 And ";
+                switch (campo)
+                {
+                    case "Numero":
+                        switch (criterio)
+                        {
+                            case "Mayor a":
+                                consulta += "P.Numero > '" + filtro + "'";
+                                break;
+                            case "Menor a":
+                                consulta += "P.Numero < '" + filtro + "'";
+                                break;
+                            default:
+                                consulta += "P.Numero = '" + filtro + "'";
+                                break;
+                        }
+                        break;
+                    case "Nombre":
+                        switch (criterio)
+                        {
+                            case "Empieza con":
+                                consulta += "P.Nombre like '" + filtro + "%'";
+                                break;
+                            case "Termina con":
+                                consulta += "P.Nombre like '%" + filtro + "'";
+                                break;
+                            default:
+                                consulta += "P.Nombre like '%" + filtro + "%'";
+                                break;
+                        }
+                        break;
+
+                    default:
+                        switch (criterio)
+                        {
+                            case "Empieza con":
+                                consulta += "P.Descripcion like '" + filtro + "%'";
+                                break;
+                            case "Termina con":
+                                consulta += "P.Descripcion like '%" + filtro + "'";
+                                break;
+                            default:
+                                consulta += "P.Descripcion like '%" + filtro + "%'";
+                                break;
+                        }
+                        break;
+                }
+
+                datos.setearConsulta(consulta);
+                datos.ejecutarLectura();
+
+                while (datos.Lector.Read())
+                {
+                    pokemonAuxiliar = new Pokemon();
+                    pokemonAuxiliar.Id = (int)datos.Lector["Id"];
+                    pokemonAuxiliar.Numero = (int)datos.Lector["Numero"];
+                    pokemonAuxiliar.Nombre = (string)datos.Lector["Nombre"];
+                    pokemonAuxiliar.Descripcion = (string)datos.Lector["Descripcion"];
+                    if (!(datos.Lector["UrlImagen"] is DBNull))
+                        pokemonAuxiliar.UrlImagen = (string)datos.Lector["UrlImagen"];
+
+                    pokemonAuxiliar.Tipo = new Elemento();
+                    pokemonAuxiliar.Tipo.Id = (int)datos.Lector["IdTipo"];
+                    pokemonAuxiliar.Tipo.Descripcion = (string)datos.Lector["Tipo"];
+
+                    pokemonAuxiliar.Debilidad = new Elemento();
+                    pokemonAuxiliar.Debilidad.Id = (int)datos.Lector["IdDebilidad"];
+                    pokemonAuxiliar.Debilidad.Descripcion = (string)datos.Lector["Debilidad"];
+
+                    listaPokemones.Add(pokemonAuxiliar);
+
+                }
+
+                return listaPokemones;
+
+            }
+            catch (Exception ex)
+            {
+
+                throw ex;
+            }
+            finally
+            {
+                datos.cerrarConexion();
+            }
+
+        }
     }
 }
-                
-                
 
 
-        
+
+
+
